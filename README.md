@@ -11,9 +11,11 @@ Utility functions for managing Koha Pages (Additional Contents) programmatically
 **Functions:**
 
 - `create_opac_page(%params)` - Create a new OPAC page
+
   - Parameters: `code`, `title`, `content`, `lang` (optional, default: 'default'), `branchcode` (optional)
   - Returns: The created page's ID
   - Example:
+
     ```perl
     use Koha::Plugin::Com::LMSCloud::Util::Pages qw( create_opac_page );
 
@@ -26,9 +28,11 @@ Utility functions for managing Koha Pages (Additional Contents) programmatically
     ```
 
 - `update_opac_page(%params)` - Update an existing OPAC page
+
   - Parameters: `code`, `title` (optional), `content` (optional), `lang` (optional, default: 'default'), `branchcode` (optional)
   - Returns: Boolean success status
   - Example:
+
     ```perl
     use Koha::Plugin::Com::LMSCloud::Util::Pages qw( update_opac_page );
 
@@ -39,9 +43,11 @@ Utility functions for managing Koha Pages (Additional Contents) programmatically
     ```
 
 - `delete_opac_page($code, $branchcode)` - Delete an OPAC page
+
   - Parameters: `code` (required), `branchcode` (optional)
   - Returns: Boolean success status
   - Example:
+
     ```perl
     use Koha::Plugin::Com::LMSCloud::Util::Pages qw( delete_opac_page );
 
@@ -49,9 +55,11 @@ Utility functions for managing Koha Pages (Additional Contents) programmatically
     ```
 
 - `opac_page_exists($code, $branchcode)` - Check if an OPAC page exists
+
   - Parameters: `code` (required), `branchcode` (optional)
   - Returns: Boolean existence status
   - Example:
+
     ```perl
     use Koha::Plugin::Com::LMSCloud::Util::Pages qw( opac_page_exists );
 
