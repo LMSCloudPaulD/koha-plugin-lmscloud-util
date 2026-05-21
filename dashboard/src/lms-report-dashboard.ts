@@ -40,10 +40,10 @@ export class LMSReportDashboard extends LitElement {
     formField,
     css`
       .filters {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        display: flex;
+        flex-wrap: wrap;
         gap: 0.75rem 1rem;
-        align-items: start;
+        align-items: flex-end;
         margin-bottom: 1rem;
         padding: 0.6rem 0.75rem;
         background: var(--lms-report-filters-bg);
@@ -51,10 +51,9 @@ export class LMSReportDashboard extends LitElement {
         border-radius: 5px;
       }
       .filters .actions {
-        grid-column: 1 / -1;
         display: flex;
-        justify-content: flex-end;
         gap: 0.5rem;
+        margin-left: auto;
       }
       .field input[type="number"] {
         min-width: 4rem;
@@ -130,12 +129,23 @@ export class LMSReportDashboard extends LitElement {
         outline-offset: 1px;
       }
       .grid {
-        display: grid;
+        display: flex;
+        flex-wrap: wrap;
         gap: 1rem;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+        align-items: stretch;
+      }
+      .grid > * {
+        min-width: 0;
+      }
+      .grid > .counter {
+        flex: 1 1 14rem;
+        max-width: 22rem;
+      }
+      .grid > .medium {
+        flex: 1 1 26rem;
       }
       .grid > .wide {
-        grid-column: 1 / -1;
+        flex: 1 1 100%;
       }
       .status {
         padding: 1rem 1.25rem;
@@ -406,19 +416,23 @@ export class LMSReportDashboard extends LitElement {
   private _renderMetric(metric: Metric) {
     switch (metric.type) {
       case "counter":
-        return html`<lms-report-counter
-          .metric=${metric}
-        ></lms-report-counter>`;
+        return html`<div class="counter">
+          <lms-report-counter .metric=${metric}></lms-report-counter>
+        </div>`;
       case "time_series":
         return html`<div class="wide">
           <lms-report-time-series
             .metric=${metric}
           ></lms-report-time-series>
         </div>`;
-      case "top_n":
-        return html`<div class="wide">
+      case "top_n": {
+        // Vertical histograms need the full width for their X-axis labels
+        // to breathe; ranked horizontal lists pack two-up.
+        const wide = metric.orientation === "vertical";
+        return html`<div class=${wide ? "wide" : "medium"}>
           <lms-report-top-n .metric=${metric}></lms-report-top-n>
         </div>`;
+      }
     }
   }
 

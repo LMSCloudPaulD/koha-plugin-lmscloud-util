@@ -9,8 +9,12 @@ import { sourceLocale, targetLocales } from "./generated/locale-codes.js";
  * locale means: extend `targetLocales` in lit-localize.json, regenerate, and
  * add a static import + map entry here. The literal `import` calls keep
  * `inlineDynamicImports: true` happy in `vite.config.ts`.
+ *
+ * Generated template modules return `string | StrResult` per entry (StrResult
+ * for templates that use `str\`…\`` substitutions); typing the map loosely as
+ * the inferred module type keeps lit-localize's runtime happy.
  */
-const localeTemplates: Record<string, { templates: Record<string, string> }> = {
+const localeTemplates: Record<string, typeof deTemplates> = {
   de: deTemplates,
   "de-DE": deDETemplates,
 };

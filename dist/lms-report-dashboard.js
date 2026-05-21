@@ -9238,19 +9238,21 @@ let z = class extends at {
   _renderMetric(i) {
     switch (i.type) {
       case "counter":
-        return C`<lms-report-counter
-          .metric=${i}
-        ></lms-report-counter>`;
+        return C`<div class="counter">
+          <lms-report-counter .metric=${i}></lms-report-counter>
+        </div>`;
       case "time_series":
         return C`<div class="wide">
           <lms-report-time-series
             .metric=${i}
           ></lms-report-time-series>
         </div>`;
-      case "top_n":
-        return C`<div class="wide">
+      case "top_n": {
+        const t = i.orientation === "vertical";
+        return C`<div class=${t ? "wide" : "medium"}>
           <lms-report-top-n .metric=${i}></lms-report-top-n>
         </div>`;
+      }
     }
   }
   _toggleWeekday(i) {
@@ -9353,10 +9355,10 @@ z.styles = [
   ys,
   Kt`
       .filters {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        display: flex;
+        flex-wrap: wrap;
         gap: 0.75rem 1rem;
-        align-items: start;
+        align-items: flex-end;
         margin-bottom: 1rem;
         padding: 0.6rem 0.75rem;
         background: var(--lms-report-filters-bg);
@@ -9364,10 +9366,9 @@ z.styles = [
         border-radius: 5px;
       }
       .filters .actions {
-        grid-column: 1 / -1;
         display: flex;
-        justify-content: flex-end;
         gap: 0.5rem;
+        margin-left: auto;
       }
       .field input[type="number"] {
         min-width: 4rem;
@@ -9443,12 +9444,23 @@ z.styles = [
         outline-offset: 1px;
       }
       .grid {
-        display: grid;
+        display: flex;
+        flex-wrap: wrap;
         gap: 1rem;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+        align-items: stretch;
+      }
+      .grid > * {
+        min-width: 0;
+      }
+      .grid > .counter {
+        flex: 1 1 14rem;
+        max-width: 22rem;
+      }
+      .grid > .medium {
+        flex: 1 1 26rem;
       }
       .grid > .wide {
-        grid-column: 1 / -1;
+        flex: 1 1 100%;
       }
       .status {
         padding: 1rem 1.25rem;
