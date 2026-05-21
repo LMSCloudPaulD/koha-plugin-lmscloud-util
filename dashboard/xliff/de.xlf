@@ -10,14 +10,6 @@
   <source>End</source>
   <target>Ende</target>
 </trans-unit>
-<trans-unit id="s7a07940a2b62f185">
-  <source>Branch</source>
-  <target>Zweigstelle</target>
-</trans-unit>
-<trans-unit id="s4573a518af68b9d0">
-  <source>All branches</source>
-  <target>Alle Zweigstellen</target>
-</trans-unit>
 <trans-unit id="s6ebc9bd6feae62a3">
   <source>Loading…</source>
   <target>Wird geladen…</target>
@@ -41,6 +33,50 @@
 <trans-unit id="s397e5e9f566d2434">
   <source>No data in the selected range.</source>
   <target>Keine Daten im ausgewählten Zeitraum.</target>
+</trans-unit>
+<trans-unit id="sad8f83df9312b389">
+  <source>Branches</source>
+  <target>Zweigstellen</target>
+</trans-unit>
+<trans-unit id="sfcc627c0017112af">
+  <source>Patron categories</source>
+  <target>Benutzerkategorien</target>
+</trans-unit>
+<trans-unit id="s1e118319b5202c41">
+  <source>Mon</source>
+  <target>Mo</target>
+</trans-unit>
+<trans-unit id="s6d24cd19e23b8185">
+  <source>Tue</source>
+  <target>Di</target>
+</trans-unit>
+<trans-unit id="s74aa0319e62b2eb7">
+  <source>Wed</source>
+  <target>Mi</target>
+</trans-unit>
+<trans-unit id="s6cfed919e21ac6ac">
+  <source>Thu</source>
+  <target>Do</target>
+</trans-unit>
+<trans-unit id="sf295af199c723ec8">
+  <source>Fri</source>
+  <target>Fr</target>
+</trans-unit>
+<trans-unit id="s9836b719fa8ef857">
+  <source>Sat</source>
+  <target>Sa</target>
+</trans-unit>
+<trans-unit id="s987ac119fac8d621">
+  <source>Sun</source>
+  <target>So</target>
+</trans-unit>
+<trans-unit id="sa47b660ae8e7a832">
+  <source>Weekdays</source>
+  <target>Wochentage</target>
+</trans-unit>
+<trans-unit id="s099b18e1bd8a1154">
+  <source>Hours</source>
+  <target>Stunden</target>
 </trans-unit>
 </body>
 </file>

@@ -4,7 +4,12 @@ export type Bucket = "day" | "week" | "month";
 export interface Scope {
   start: string;
   end: string;
-  branchcode: string | null;
+  branchcode: string[] | null;
+  categorycodes: string[] | null;
+  roomids: number[] | null;
+  weekdays: number[] | null;
+  hour_start: number | null;
+  hour_end: number | null;
 }
 
 interface MetricBase {
@@ -56,5 +61,37 @@ export interface ReportEnvelope {
 export interface ReportFilters {
   start: string;
   end: string;
-  branchcode: string;
+  branchcodes: string[];
+  categorycodes: string[];
+  weekdays: number[];
+  hourStart: number | null;
+  hourEnd: number | null;
+}
+
+/**
+ * Contract every slotted filter element under `<lms-report-dashboard>` must
+ * satisfy. The dashboard calls `filterValues()` at fetch time and emits one
+ * URL search-param entry per returned string under `filterName`.
+ *
+ * Plugin-specific filter widgets (e.g. a room multi-select or an event-type
+ * picker) implement this interface so the dashboard can stay domain-agnostic
+ * while still composing them into the request envelope.
+ */
+export interface LMSReportFilterElement extends HTMLElement {
+  /** URL search-param name (singular; repeated for IN-list filters). */
+  readonly filterName: string;
+  /** Current selected values, encoded as strings. Empty array means "no filter". */
+  filterValues(): string[];
+  /** Optional: clear the widget's pending selection. */
+  filterReset?(): void;
+}
+
+export function isFilterElement(
+  el: Element,
+): el is LMSReportFilterElement {
+  return (
+    "filterName" in el &&
+    typeof (el as LMSReportFilterElement).filterName === "string" &&
+    typeof (el as LMSReportFilterElement).filterValues === "function"
+  );
 }

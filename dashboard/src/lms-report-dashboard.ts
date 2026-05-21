@@ -1,14 +1,20 @@
 import { msg, updateWhenLocaleChanges } from "@lit/localize";
 import { LitElement, css, html, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { repeat } from "lit/directives/repeat.js";
 import { applyDocumentLocale } from "./locale-init.js";
 import "./lms-report-counter.js";
+import "./lms-report-filter-multiselect.js";
 import "./lms-report-time-series.js";
 import "./lms-report-top-n.js";
-import { tokens } from "./styles/tokens.js";
-import type { Metric, ReportEnvelope } from "./types.js";
+import { formField, tokens } from "./styles/tokens.js";
+import {
+  isFilterElement,
+  type LMSReportFilterElement,
+  type Metric,
+  type ReportEnvelope,
+} from "./types.js";
 
 type View =
   | { kind: "error"; message: string }
@@ -16,10 +22,21 @@ type View =
   | { kind: "data"; envelope: ReportEnvelope }
   | { kind: "empty" };
 
+interface Library {
+  library_id: string;
+  name: string;
+}
+
+interface Category {
+  patron_category_id: string;
+  name: string;
+}
+
 @customElement("lms-report-dashboard")
 export class LMSReportDashboard extends LitElement {
   static override styles = [
     tokens,
+    formField,
     css`
       .filters {
         display: flex;
@@ -32,26 +49,39 @@ export class LMSReportDashboard extends LitElement {
         border: 1px solid var(--lms-report-filters-border);
         border-radius: 5px;
       }
-      .field {
+      .field input[type="number"] {
+        min-width: 5rem;
+        width: 5rem;
+      }
+      .field--row {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .weekday-chips {
         display: flex;
-        flex-direction: column;
-        gap: 0.15rem;
-        font-size: 0.85rem;
+        flex-wrap: wrap;
+        gap: 0.25rem;
       }
-      .field label {
-        font-weight: normal;
-        color: var(--lms-report-fg);
-      }
-      .field input,
-      .field select {
+      .weekday-chips button {
         font: inherit;
-        padding: 0.35rem 0.55rem;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.55rem;
         border: 1px solid var(--lms-report-input-border);
-        border-radius: var(--lms-report-input-radius);
+        border-radius: 999px;
         background: var(--lms-report-input-bg);
         color: inherit;
-        min-width: 9rem;
-        line-height: 1.42857143;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .weekday-chips button[aria-pressed="true"] {
+        background: var(--lms-report-accent);
+        border-color: var(--lms-report-accent);
+        color: var(--lms-report-accent-fg);
+      }
+      .weekday-chips button:focus {
+        outline: 2px solid var(--lms-report-accent-soft);
+        outline-offset: 1px;
       }
       button.apply {
         font: inherit;
@@ -105,13 +135,21 @@ export class LMSReportDashboard extends LitElement {
 
   /**
    * Optional URL returning the list of libraries available to the
-   * current user. The component expects an array of objects shaped as
-   * Koha's `/libraries` response (`library_id` + `name`). When set, the
-   * Branch field renders as a populated `<select>` instead of a plain
-   * text input.
+   * current user. Component expects Koha's `/libraries` shape
+   * (`library_id` + `name`, with `branchcode`/`branchname` fallback).
+   * When set, the Branches field renders as a multi-select.
    */
   @property({ type: String, attribute: "libraries-endpoint" })
   librariesEndpoint = "";
+
+  /**
+   * Optional URL returning the list of patron categories. Component
+   * expects Koha's `/patron_categories` shape (`patron_category_id` +
+   * `name`/`description`, with `categorycode` fallback). When set, the
+   * Patron categories field renders as a multi-select.
+   */
+  @property({ type: String, attribute: "categories-endpoint" })
+  categoriesEndpoint = "";
 
   @property({ type: String })
   start = "";
@@ -119,18 +157,23 @@ export class LMSReportDashboard extends LitElement {
   @property({ type: String })
   end = "";
 
-  @property({ type: String })
-  branchcode = "";
-
   @state() private _envelope: ReportEnvelope | null = null;
   @state() private _loading = false;
   @state() private _error: string | null = null;
 
   @state() private _pendingStart = "";
   @state() private _pendingEnd = "";
-  @state() private _pendingBranchcode = "";
+  @state() private _pendingBranchcodes: string[] = [];
+  @state() private _pendingCategorycodes: string[] = [];
+  @state() private _pendingWeekdays = new Set<number>();
+  @state() private _pendingHourStart: number | null = null;
+  @state() private _pendingHourEnd: number | null = null;
 
-  @state() private _libraries: Array<{ library_id: string; name: string }> = [];
+  @state() private _libraries: Library[] = [];
+  @state() private _categories: Category[] = [];
+
+  @query('slot[name="filters"]')
+  private _filtersSlot?: HTMLSlotElement;
 
   private _abort: AbortController | null = null;
 
@@ -145,9 +188,9 @@ export class LMSReportDashboard extends LitElement {
     if (!this.end) this.end = today();
     this._pendingStart = this.start;
     this._pendingEnd = this.end;
-    this._pendingBranchcode = this.branchcode;
     void applyDocumentLocale();
     if (this.librariesEndpoint) void this._fetchLibraries();
+    if (this.categoriesEndpoint) void this._fetchCategories();
     if (this.endpoint) void this._fetchReport();
   }
 
@@ -181,49 +224,150 @@ export class LMSReportDashboard extends LitElement {
             required
           />
         </div>
-        <div class="field">
-          <label for="branchcode">${msg("Branch")}</label>
-          ${this._libraries.length > 0
-            ? html`
-                <select
-                  id="branchcode"
-                  .value=${this._pendingBranchcode}
-                  @change=${(e: Event) =>
-                    (this._pendingBranchcode = (
-                      e.target as HTMLSelectElement
-                    ).value)}
-                >
-                  <option value="">${msg("All branches")}</option>
-                  ${map(
-                    this._libraries,
-                    (lib) =>
-                      html`<option
-                        value=${lib.library_id}
-                        ?selected=${lib.library_id === this._pendingBranchcode}
-                      >
-                        ${lib.name}
-                      </option>`,
-                  )}
-                </select>
-              `
-            : html`
-                <input
-                  id="branchcode"
-                  type="text"
-                  placeholder=${msg("All branches")}
-                  .value=${this._pendingBranchcode}
-                  @input=${(e: Event) =>
-                    (this._pendingBranchcode = (
-                      e.target as HTMLInputElement
-                    ).value)}
-                />
-              `}
-        </div>
+        ${this._renderLibrariesField()} ${this._renderCategoriesField()}
+        <slot name="filters"></slot>
+        ${this._renderWeekdayField()} ${this._renderHourRangeField()}
         <button class="apply" type="submit" ?disabled=${this._loading}>
           ${this._loading ? msg("Loading…") : msg("Apply")}
         </button>
       </form>
       ${this._renderBody()}
+    `;
+  }
+
+  private _renderLibrariesField() {
+    if (this._libraries.length === 0) return nothing;
+    return html`
+      <div class="field">
+        <label for="branchcode">${msg("Branches")}</label>
+        <select
+          id="branchcode"
+          multiple
+          @change=${(e: Event) => {
+            const sel = e.target as HTMLSelectElement;
+            this._pendingBranchcodes = Array.from(
+              sel.selectedOptions,
+              (o) => o.value,
+            );
+          }}
+        >
+          ${map(
+            this._libraries,
+            (lib) => html`
+              <option
+                value=${lib.library_id}
+                ?selected=${this._pendingBranchcodes.includes(lib.library_id)}
+              >
+                ${lib.name}
+              </option>
+            `,
+          )}
+        </select>
+      </div>
+    `;
+  }
+
+  private _renderCategoriesField() {
+    if (this._categories.length === 0) return nothing;
+    return html`
+      <div class="field">
+        <label for="categorycode">${msg("Patron categories")}</label>
+        <select
+          id="categorycode"
+          multiple
+          @change=${(e: Event) => {
+            const sel = e.target as HTMLSelectElement;
+            this._pendingCategorycodes = Array.from(
+              sel.selectedOptions,
+              (o) => o.value,
+            );
+          }}
+        >
+          ${map(
+            this._categories,
+            (cat) => html`
+              <option
+                value=${cat.patron_category_id}
+                ?selected=${this._pendingCategorycodes.includes(
+                  cat.patron_category_id,
+                )}
+              >
+                ${cat.name}
+              </option>
+            `,
+          )}
+        </select>
+      </div>
+    `;
+  }
+
+  private _renderWeekdayField() {
+    const labels = [
+      msg("Mon"),
+      msg("Tue"),
+      msg("Wed"),
+      msg("Thu"),
+      msg("Fri"),
+      msg("Sat"),
+      msg("Sun"),
+    ];
+    return html`
+      <div class="field">
+        <label>${msg("Weekdays")}</label>
+        <div class="weekday-chips" role="group" aria-label=${msg("Weekdays")}>
+          ${map(
+            labels,
+            (lbl, idx) => html`
+              <button
+                type="button"
+                aria-pressed=${this._pendingWeekdays.has(idx) ? "true" : "false"}
+                @click=${() => this._toggleWeekday(idx)}
+              >
+                ${lbl}
+              </button>
+            `,
+          )}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderHourRangeField() {
+    return html`
+      <div class="field">
+        <label for="hour-start">${msg("Hours")}</label>
+        <div class="field--row">
+          <input
+            id="hour-start"
+            type="number"
+            min="0"
+            max="23"
+            placeholder="0"
+            .value=${this._pendingHourStart === null
+              ? ""
+              : String(this._pendingHourStart)}
+            @input=${(e: Event) => {
+              const v = (e.target as HTMLInputElement).value;
+              this._pendingHourStart = v === "" ? null : Number(v);
+            }}
+          />
+          <span aria-hidden="true">–</span>
+          <input
+            id="hour-end"
+            type="number"
+            min="0"
+            max="23"
+            placeholder="23"
+            .value=${this._pendingHourEnd === null
+              ? ""
+              : String(this._pendingHourEnd)}
+            @input=${(e: Event) => {
+              const v = (e.target as HTMLInputElement).value;
+              this._pendingHourEnd = v === "" ? null : Number(v);
+            }}
+          />
+        </div>
+      </div>
     `;
   }
 
@@ -277,12 +421,26 @@ export class LMSReportDashboard extends LitElement {
     }
   }
 
+  private _toggleWeekday(idx: number) {
+    const next = new Set(this._pendingWeekdays);
+    if (next.has(idx)) next.delete(idx);
+    else next.add(idx);
+    this._pendingWeekdays = next;
+  }
+
   private _onSubmit(event: Event) {
     event.preventDefault();
     this.start = this._pendingStart;
     this.end = this._pendingEnd;
-    this.branchcode = this._pendingBranchcode;
     void this._fetchReport();
+  }
+
+  private _slottedFilters(): LMSReportFilterElement[] {
+    const slot = this._filtersSlot;
+    if (!slot) return [];
+    return slot
+      .assignedElements({ flatten: true })
+      .filter((el): el is LMSReportFilterElement => isFilterElement(el));
   }
 
   private async _fetchLibraries() {
@@ -307,7 +465,34 @@ export class LMSReportDashboard extends LitElement {
         .filter((lib) => lib.library_id !== "")
         .sort((a, b) => a.name.localeCompare(b.name));
     } catch {
-      // Falling back to a free-text input is acceptable; ignore.
+      // Falling back to no branch filter is acceptable; ignore.
+    }
+  }
+
+  private async _fetchCategories() {
+    try {
+      const response = await fetch(this.categoriesEndpoint, {
+        method: "GET",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as Array<{
+        patron_category_id?: string;
+        categorycode?: string;
+        name?: string;
+        description?: string;
+      }>;
+      this._categories = data
+        .map((cat) => ({
+          patron_category_id:
+            cat.patron_category_id ?? cat.categorycode ?? "",
+          name: cat.description ?? cat.name ?? cat.patron_category_id ?? "",
+        }))
+        .filter((cat) => cat.patron_category_id !== "")
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch {
+      // Falling back to no category filter is acceptable; ignore.
     }
   }
 
@@ -324,10 +509,23 @@ export class LMSReportDashboard extends LitElement {
     const url = new URL(this.endpoint, window.location.origin);
     url.searchParams.set("start", this.start);
     url.searchParams.set("end", this.end);
-    if (this.branchcode) {
-      url.searchParams.set("branchcode", this.branchcode);
-    } else {
-      url.searchParams.delete("branchcode");
+    for (const code of this._pendingBranchcodes) {
+      url.searchParams.append("branchcode", code);
+    }
+    for (const code of this._pendingCategorycodes) {
+      url.searchParams.append("categorycode", code);
+    }
+    for (const idx of [...this._pendingWeekdays].sort((a, b) => a - b)) {
+      url.searchParams.append("weekday", String(idx));
+    }
+    if (this._pendingHourStart !== null && this._pendingHourEnd !== null) {
+      url.searchParams.set("hour_start", String(this._pendingHourStart));
+      url.searchParams.set("hour_end", String(this._pendingHourEnd));
+    }
+    for (const filter of this._slottedFilters()) {
+      for (const value of filter.filterValues()) {
+        url.searchParams.append(filter.filterName, value);
+      }
     }
 
     this._loading = true;
@@ -354,8 +552,7 @@ export class LMSReportDashboard extends LitElement {
       );
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
-      this._error =
-        (err as Error).message || msg("Failed to load report.");
+      this._error = (err as Error).message || msg("Failed to load report.");
     } finally {
       if (this._abort === controller) this._abort = null;
       this._loading = false;

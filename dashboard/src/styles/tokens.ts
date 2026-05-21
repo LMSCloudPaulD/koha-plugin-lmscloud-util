@@ -93,3 +93,35 @@ export const cardSurface = css`
     height: var(--lms-report-chart-height);
   }
 `;
+
+/**
+ * Toolbar field styling shared by the dashboard's built-in filters and any
+ * slotted custom filter elements (e.g. lms-report-filter-multiselect). Keeps
+ * inputs visually consistent across shadow roots without duplicating rules.
+ */
+export const formField = css`
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.85rem;
+  }
+  .field label {
+    font-weight: normal;
+    color: var(--lms-report-fg);
+  }
+  .field input,
+  .field select {
+    font: inherit;
+    padding: 0.35rem 0.55rem;
+    border: 1px solid var(--lms-report-input-border);
+    border-radius: var(--lms-report-input-radius);
+    background: var(--lms-report-input-bg);
+    color: inherit;
+    min-width: 9rem;
+    line-height: 1.42857143;
+  }
+  .field select[multiple] {
+    min-height: 5.5rem;
+  }
+`;
