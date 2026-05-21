@@ -450,7 +450,7 @@ export class LMSReportDashboard extends LitElement {
           <lms-report-stacked-bar .metric=${metric}></lms-report-stacked-bar>
         </div>`;
       case "heatmap":
-        return html`<div class="wide">
+        return html`<div class="medium">
           <lms-report-heatmap .metric=${metric}></lms-report-heatmap>
         </div>`;
     }

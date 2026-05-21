@@ -10304,7 +10304,7 @@ let V = class extends lt {
           <lms-report-stacked-bar .metric=${i}></lms-report-stacked-bar>
         </div>`;
       case "heatmap":
-        return A`<div class="wide">
+        return A`<div class="medium">
           <lms-report-heatmap .metric=${i}></lms-report-heatmap>
         </div>`;
     }
