@@ -1,4 +1,9 @@
-export type MetricType = "counter" | "time_series" | "top_n";
+export type MetricType =
+  | "counter"
+  | "time_series"
+  | "top_n"
+  | "stacked_bar"
+  | "heatmap";
 export type Bucket = "day" | "week" | "month";
 
 export interface Scope {
@@ -11,6 +16,8 @@ export interface Scope {
   hour_start: number | null;
   hour_end: number | null;
 }
+
+
 
 interface MetricBase {
   id: string;
@@ -51,7 +58,36 @@ export interface TopNMetric extends MetricBase {
   orientation?: TopNOrientation;
 }
 
-export type Metric = CounterMetric | TimeSeriesMetric | TopNMetric;
+export interface StackedBarSeries {
+  label: string;
+  color?: string | null;
+  values: number[];
+}
+
+export interface StackedBarMetric extends MetricBase {
+  type: "stacked_bar";
+  buckets: string[];
+  series: StackedBarSeries[];
+}
+
+export interface HeatmapAxisEntry {
+  label: string;
+  color?: string | null;
+}
+
+export interface HeatmapMetric extends MetricBase {
+  type: "heatmap";
+  rows: HeatmapAxisEntry[];
+  cols: HeatmapAxisEntry[];
+  grid: number[][];
+}
+
+export type Metric =
+  | CounterMetric
+  | TimeSeriesMetric
+  | TopNMetric
+  | StackedBarMetric
+  | HeatmapMetric;
 
 export interface ReportEnvelope {
   scope: Scope;

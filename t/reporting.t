@@ -38,6 +38,8 @@ use_ok 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Metric';
 use_ok 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Metric::Counter';
 use_ok 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Metric::TimeSeries';
 use_ok 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Metric::TopN';
+use_ok 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Metric::StackedBar';
+use_ok 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Metric::Heatmap';
 use_ok 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Dashboard';
 
 subtest 'Scope validates ISO dates and ordering' => sub {
@@ -339,6 +341,142 @@ subtest 'TopN primitive' => sub {
 subtest 'TopN rejects SQL without a LIMIT clause' => sub {
     my $metric = TestTopNNoLimit->new( dbh => $dbh, scope => $scope );
     throws_ok { $metric->compute } qr/LIMIT clause/, 'missing LIMIT croaks';
+};
+
+subtest 'StackedBar primitive shapes buckets and series' => sub {
+    my $local_dbh = DBI->connect( 'dbi:SQLite:dbname=:memory:', q{}, q{}, { RaiseError => 1 } );
+    $local_dbh->do(<<'SQL');
+CREATE TABLE bookings (
+    booking_id INTEGER PRIMARY KEY,
+    bucket TEXT, bucket_order INTEGER,
+    room TEXT, room_color TEXT, room_order INTEGER
+);
+SQL
+
+    # Two weekday buckets x three rooms, with one room absent on one bucket.
+    my @seed = (
+        [ 'Mon', 0, 'R1', '#aaaaaa', 1, 1 ],
+        [ 'Mon', 0, 'R2', '#bbbbbb', 2, 1 ],
+        [ 'Mon', 0, 'R3', '#cccccc', 3, 1 ],
+        [ 'Tue', 1, 'R1', '#aaaaaa', 1, 1 ],
+        [ 'Tue', 1, 'R2', '#bbbbbb', 2, 1 ],
+
+        # R1 dominates on Mon, R2 on Tue.
+        [ 'Mon', 0, 'R1', '#aaaaaa', 1, 4 ],
+        [ 'Tue', 1, 'R2', '#bbbbbb', 2, 3 ],
+    );
+    my $ins = $local_dbh->prepare('INSERT INTO bookings (bucket,bucket_order,room,room_color,room_order) VALUES (?,?,?,?,?)');
+    for my $row (@seed) {
+        my ( $b, $bo, $r, $rc, $ro, $reps ) = @{$row};
+        for ( 1 .. $reps ) { $ins->execute( $b, $bo, $r, $rc, $ro ) }
+    }
+
+    {
+
+        package TestStackedBar;
+        use Moose;
+        extends 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Metric::StackedBar';
+        has '+id'    => ( default => 'bookings_by_weekday' );
+        has '+label' => ( default => 'Bookings by weekday' );
+
+        sub _query {
+            return (
+                'SELECT bucket, bucket_order, room AS series_label, room_color AS series_color,
+                        room_order AS series_order, COUNT(*) AS value
+                 FROM bookings GROUP BY bucket, bucket_order, room, room_color, room_order',
+                [],
+            );
+        }
+        __PACKAGE__->meta->make_immutable;
+    }
+
+    my $metric   = TestStackedBar->new( dbh => $local_dbh, scope => $scope );
+    my $envelope = $metric->compute;
+    is $envelope->{type}, 'stacked_bar', 'envelope type';
+    is_deeply $envelope->{buckets}, [ 'Mon', 'Tue' ], 'buckets ordered by bucket_order';
+
+    my %series_by_label = map { $_->{label} => $_ } @{ $envelope->{series} };
+    is_deeply $series_by_label{R1}->{values}, [ 5, 1 ], 'R1 values across buckets (zero-fill not needed)';
+    is_deeply $series_by_label{R2}->{values}, [ 1, 4 ], 'R2 values';
+    is_deeply $series_by_label{R3}->{values}, [ 1, 0 ], 'R3 zero-filled on Tue';
+    is $series_by_label{R1}->{color}, '#aaaaaa', 'series color carried through';
+};
+
+subtest 'StackedBar caps to top_n_series with Other bucket' => sub {
+    my $local_dbh = DBI->connect( 'dbi:SQLite:dbname=:memory:', q{}, q{}, { RaiseError => 1 } );
+    $local_dbh->do('CREATE TABLE b (bucket TEXT, bucket_order INTEGER, s TEXT, sc TEXT, so INTEGER, v INTEGER)');
+    my $ins = $local_dbh->prepare('INSERT INTO b VALUES (?,?,?,?,?,?)');
+
+    # 5 series with descending totals. Cap at 2 -> S1, S2 kept; S3+S4+S5 -> Other.
+    $ins->execute( 'X', 0, 'S1', '#111', 1, 10 );
+    $ins->execute( 'X', 0, 'S2', '#222', 2, 7 );
+    $ins->execute( 'X', 0, 'S3', '#333', 3, 3 );
+    $ins->execute( 'X', 0, 'S4', '#444', 4, 2 );
+    $ins->execute( 'X', 0, 'S5', '#555', 5, 1 );
+
+    {
+
+        package TestStackedCap;
+        use Moose;
+        extends 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Metric::StackedBar';
+        has '+id'           => ( default => 'capped' );
+        has '+label'        => ( default => 'Capped' );
+        has '+top_n_series' => ( default => 2 );
+
+        sub _query {
+            return ( 'SELECT bucket, bucket_order, s AS series_label, sc AS series_color,
+                            so AS series_order, v AS value FROM b', [] );
+        }
+        __PACKAGE__->meta->make_immutable;
+    }
+
+    my $metric   = TestStackedCap->new( dbh => $local_dbh, scope => $scope );
+    my $envelope = $metric->compute;
+    is scalar @{ $envelope->{series} }, 3, 'top 2 + Other = 3 series';
+    is $envelope->{series}->[0]->{label}, 'S1',    'biggest series first';
+    is $envelope->{series}->[1]->{label}, 'S2',    'second biggest second';
+    is $envelope->{series}->[2]->{label}, 'Other', 'Other bucket appended';
+    is_deeply $envelope->{series}->[2]->{values}, [ 6 ], 'Other sums collapsed series (3+2+1)';
+};
+
+subtest 'Heatmap primitive shapes rows, cols, grid' => sub {
+    my $local_dbh = DBI->connect( 'dbi:SQLite:dbname=:memory:', q{}, q{}, { RaiseError => 1 } );
+    $local_dbh->do('CREATE TABLE b (rl TEXT, ro INTEGER, cl TEXT, cc TEXT, co INTEGER, v INTEGER)');
+    my $ins = $local_dbh->prepare('INSERT INTO b VALUES (?,?,?,?,?,?)');
+
+    # Two patron categories x three rooms, with one cell absent.
+    $ins->execute( 'Staff',   1, 'R1', '#aaa', 1, 5 );
+    $ins->execute( 'Staff',   1, 'R2', '#bbb', 2, 3 );
+    $ins->execute( 'Staff',   1, 'R3', '#ccc', 3, 1 );
+    $ins->execute( 'Student', 2, 'R1', '#aaa', 1, 7 );
+    $ins->execute( 'Student', 2, 'R3', '#ccc', 3, 2 );
+
+    {
+
+        package TestHeatmap;
+        use Moose;
+        extends 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Metric::Heatmap';
+        has '+id'    => ( default => 'category_room' );
+        has '+label' => ( default => 'Category x Room' );
+
+        sub _query {
+            return (
+                'SELECT rl AS row_label, ro AS row_order,
+                        cl AS col_label, cc AS col_color, co AS col_order,
+                        v AS value FROM b',
+                [],
+            );
+        }
+        __PACKAGE__->meta->make_immutable;
+    }
+
+    my $metric   = TestHeatmap->new( dbh => $local_dbh, scope => $scope );
+    my $envelope = $metric->compute;
+    is $envelope->{type}, 'heatmap', 'envelope type';
+    is_deeply [ map { $_->{label} } @{ $envelope->{rows} } ], [ 'Staff', 'Student' ], 'rows ordered';
+    is_deeply [ map { $_->{label} } @{ $envelope->{cols} } ], [ 'R1', 'R2', 'R3' ],   'cols ordered';
+    is $envelope->{cols}->[0]->{color}, '#aaa', 'col color carried through';
+    is_deeply $envelope->{grid}, [ [ 5, 3, 1 ], [ 7, 0, 2 ] ], 'grid zero-fills missing cells';
 };
 
 subtest 'Dashboard envelope and validation' => sub {

@@ -7,6 +7,8 @@ import { applyDocumentLocale } from "./locale-init.js";
 import "./lms-report-chip-picker.js";
 import "./lms-report-counter.js";
 import "./lms-report-filter-multiselect.js";
+import "./lms-report-heatmap.js";
+import "./lms-report-stacked-bar.js";
 import "./lms-report-time-series.js";
 import "./lms-report-top-n.js";
 import { formField, tokens } from "./styles/tokens.js";
@@ -437,6 +439,14 @@ export class LMSReportDashboard extends LitElement {
           <lms-report-top-n .metric=${metric}></lms-report-top-n>
         </div>`;
       }
+      case "stacked_bar":
+        return html`<div class="wide">
+          <lms-report-stacked-bar .metric=${metric}></lms-report-stacked-bar>
+        </div>`;
+      case "heatmap":
+        return html`<div class="wide">
+          <lms-report-heatmap .metric=${metric}></lms-report-heatmap>
+        </div>`;
     }
   }
 
