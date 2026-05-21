@@ -39,6 +39,10 @@ export const tokens = css`
     --lms-report-input-bg: #ffffff;
     --lms-report-input-border: #bcbcbc;
     --lms-report-input-radius: 4px;
+    /* Shared height for every toolbar control so the row aligns crisply
+       regardless of which native widget is rendered (date picker, number
+       spinner, dropdown trigger, chip button). */
+    --lms-report-control-height: 2rem;
 
     --lms-report-chart-height: 16rem;
 
@@ -113,15 +117,14 @@ export const formField = css`
   .field input,
   .field select {
     font: inherit;
-    padding: 0.35rem 0.55rem;
+    box-sizing: border-box;
+    height: var(--lms-report-control-height);
+    padding: 0 0.55rem;
     border: 1px solid var(--lms-report-input-border);
     border-radius: var(--lms-report-input-radius);
     background: var(--lms-report-input-bg);
     color: inherit;
     min-width: 9rem;
     line-height: 1.42857143;
-  }
-  .field select[multiple] {
-    min-height: 5.5rem;
   }
 `;

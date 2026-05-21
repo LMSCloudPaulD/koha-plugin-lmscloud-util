@@ -72,7 +72,9 @@ export class LMSReportDashboard extends LitElement {
       .weekday-chips button {
         font: inherit;
         font-size: 0.8rem;
-        padding: 0.3rem 0.55rem;
+        box-sizing: border-box;
+        height: var(--lms-report-control-height);
+        padding: 0 0.7rem;
         border: 1px solid var(--lms-report-input-border);
         border-radius: 999px;
         background: var(--lms-report-input-bg);
@@ -93,7 +95,9 @@ export class LMSReportDashboard extends LitElement {
       button.reset {
         font: inherit;
         line-height: 1.42857143;
-        padding: 0.35rem 0.85rem;
+        box-sizing: border-box;
+        height: var(--lms-report-control-height);
+        padding: 0 0.85rem;
         border-radius: var(--lms-report-button-radius);
         font-weight: normal;
         cursor: pointer;

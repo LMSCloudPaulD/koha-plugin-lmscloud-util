@@ -13,7 +13,6 @@
 's099b18e1bd8a1154': `Stunden`,
 's1e118319b5202c41': `Mo`,
 's255857544a9d5ec0': `Zurücksetzen`,
-'s2fa05f91c1baa29b': str`${0} entfernen`,
 's397e5e9f566d2434': `Keine Daten im ausgewählten Zeitraum.`,
 's58bfb494feb8eb02': str`${0} ausgewählt`,
 's5cf1605225daef5f': `Bericht konnte nicht geladen werden.`,

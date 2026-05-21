@@ -36,7 +36,9 @@ export class LMSReportChipPicker extends LitElement {
       .trigger {
         font: inherit;
         text-align: left;
-        padding: 0.35rem 0.55rem;
+        box-sizing: border-box;
+        height: var(--lms-report-control-height);
+        padding: 0 0.55rem;
         border: 1px solid var(--lms-report-input-border);
         border-radius: var(--lms-report-input-radius);
         background: var(--lms-report-input-bg);
@@ -117,39 +119,6 @@ export class LMSReportChipPicker extends LitElement {
         color: var(--lms-report-muted);
         cursor: not-allowed;
       }
-      .chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        margin-top: 0.3rem;
-      }
-      .chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.1rem 0.2rem 0.1rem 0.5rem;
-        background: var(--lms-report-accent);
-        color: var(--lms-report-accent-fg);
-        border-radius: 999px;
-        font-size: 0.78rem;
-        line-height: 1.2;
-      }
-      .chip button {
-        background: transparent;
-        color: inherit;
-        border: none;
-        font: inherit;
-        font-size: 1em;
-        line-height: 1;
-        padding: 0 0.25rem;
-        border-radius: 999px;
-        cursor: pointer;
-      }
-      .chip button:hover,
-      .chip button:focus {
-        background: rgba(255, 255, 255, 0.2);
-        outline: none;
-      }
     `,
   ];
 
@@ -219,7 +188,6 @@ export class LMSReportChipPicker extends LitElement {
         <span class="caret" aria-hidden="true">▾</span>
       </button>
       ${this._open ? this._renderPanel() : nothing}
-      ${this.selected.length > 0 ? this._renderChips() : nothing}
     `;
   }
 
@@ -253,29 +221,6 @@ export class LMSReportChipPicker extends LitElement {
         >
           ${msg("Clear selection")}
         </button>
-      </div>
-    `;
-  }
-
-  private _renderChips() {
-    return html`
-      <div class="chips">
-        ${map(this.selected, (value) => {
-          const opt = this.options.find((o) => o.value === value);
-          const label = opt ? opt.label : value;
-          return html`
-            <span class="chip">
-              ${label}
-              <button
-                type="button"
-                aria-label=${msg(str`Remove ${label}`)}
-                @click=${() => this._toggleOption(value, false)}
-              >
-                ×
-              </button>
-            </span>
-          `;
-        })}
       </div>
     `;
   }
