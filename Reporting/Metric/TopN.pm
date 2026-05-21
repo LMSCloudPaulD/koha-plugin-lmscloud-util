@@ -5,6 +5,7 @@ use utf8;
 
 use Carp qw( croak );
 use Moose;
+use Moose::Util::TypeConstraints qw( enum );
 
 use Koha::Plugin::Com::LMSCloud::Util::Reporting::Types qw( $TOP_N );
 
@@ -16,6 +17,16 @@ has 'limit_n' => (
     is      => 'ro',
     isa     => 'Int',
     default => 10,
+);
+
+# 'horizontal' renders the values on the x-axis (default; reads as a
+# ranked list); 'vertical' renders categories on the x-axis (reads as a
+# histogram, useful when the categories are temporal — hour-of-day,
+# weekday — and should flow left-to-right).
+has 'orientation' => (
+    is      => 'ro',
+    isa     => enum( [qw( horizontal vertical )] ),
+    default => 'horizontal',
 );
 
 sub type { return $TOP_N }
@@ -35,7 +46,7 @@ sub _postprocess {
         if $sql !~ m{\bLIMIT\b}smxi;
 
     my $items = $self->_coerce_rows( $sth, [qw( label value )] );
-    return { items => $items };
+    return { items => $items, orientation => $self->orientation };
 }
 ## use critic
 

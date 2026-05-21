@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+<file target-language="de-DE" source-language="en" original="lit-localize-inputs" datatype="plaintext">
+<body>
+<trans-unit id="sae1c7f13b7c0c47f">
+  <source>Start</source>
+  <target>Start</target>
+</trans-unit>
+<trans-unit id="sd8f923198e0c5c6a">
+  <source>End</source>
+  <target>Ende</target>
+</trans-unit>
+<trans-unit id="s7a07940a2b62f185">
+  <source>Branch</source>
+  <target>Zweigstelle</target>
+</trans-unit>
+<trans-unit id="s4573a518af68b9d0">
+  <source>All branches</source>
+  <target>Alle Zweigstellen</target>
+</trans-unit>
+<trans-unit id="s6ebc9bd6feae62a3">
+  <source>Loading…</source>
+  <target>Wird geladen…</target>
+</trans-unit>
+<trans-unit id="sb8f855b49234b81b">
+  <source>Apply</source>
+  <target>Anwenden</target>
+</trans-unit>
+<trans-unit id="s8837e7420b616a47">
+  <source>Loading report…</source>
+  <target>Bericht wird geladen…</target>
+</trans-unit>
+<trans-unit id="s059ab0c93ac06045">
+  <source>No endpoint configured.</source>
+  <target>Kein Endpunkt konfiguriert.</target>
+</trans-unit>
+<trans-unit id="s5cf1605225daef5f">
+  <source>Failed to load report.</source>
+  <target>Bericht konnte nicht geladen werden.</target>
+</trans-unit>
+<trans-unit id="s397e5e9f566d2434">
+  <source>No data in the selected range.</source>
+  <target>Keine Daten im ausgewählten Zeitraum.</target>
+</trans-unit>
+</body>
+</file>
+</xliff>

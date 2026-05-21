@@ -1,0 +1,29 @@
+{
+  "name": "@lmscloud/lms-report-dashboard",
+  "version": "0.1.0",
+  "description": "Shared <lms-report-dashboard> web component that renders the LMSCloud Reporting harness envelope (counters, time-series, top-N).",
+  "license": "GPL-3.0",
+  "author": "LMSCloud GmbH",
+  "type": "module",
+  "main": "../dist/lms-report-dashboard.js",
+  "files": [
+    "../dist/lms-report-dashboard.js"
+  ],
+  "scripts": {
+    "build": "pnpm run i18n:build && vite build",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "i18n:extract": "lit-localize extract",
+    "i18n:build": "lit-localize build"
+  },
+  "dependencies": {
+    "@lit/localize": "^0.12.2",
+    "chart.js": "^4.4.7",
+    "lit": "^3.3.1"
+  },
+  "devDependencies": {
+    "@lit/localize-tools": "^0.8.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}
