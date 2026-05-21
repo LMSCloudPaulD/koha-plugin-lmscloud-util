@@ -45,6 +45,11 @@ export const tokens = css`
     --lms-report-control-height: 2rem;
 
     --lms-report-chart-height: 16rem;
+    /* Stacked bar charts (weekday, hour-of-day) get more vertical room
+       because they typically span the dashboard's full width and would
+       otherwise feel squat against ~24 buckets. Override the per-card
+       height via this token when an instance needs a different size. */
+    --lms-report-chart-height-stacked: 22rem;
 
     --lms-report-counter-size: 2.5rem;
     --lms-report-counter-fg: var(--lms-report-accent);

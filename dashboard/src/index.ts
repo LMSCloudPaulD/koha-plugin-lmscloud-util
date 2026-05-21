@@ -1,6 +1,7 @@
 export { LMSReportChipPicker } from "./lms-report-chip-picker.js";
 export type { ChipPickerOption } from "./lms-report-chip-picker.js";
 export { LMSReportDashboard } from "./lms-report-dashboard.js";
+export { LMSReportDonut } from "./lms-report-donut.js";
 export { LMSReportFilterMultiselect } from "./lms-report-filter-multiselect.js";
 export { LMSReportHeatmap } from "./lms-report-heatmap.js";
 export { LMSReportStackedBar } from "./lms-report-stacked-bar.js";
@@ -19,6 +20,7 @@ export type {
   StackedBarSeries,
   TimeSeriesMetric,
   TimeSeriesPoint,
+  TopNDisplay,
   TopNItem,
   TopNMetric,
   TopNOrientation,
@@ -26,6 +28,7 @@ export type {
 
 import "./lms-report-chip-picker.js";
 import "./lms-report-dashboard.js";
+import "./lms-report-donut.js";
 import "./lms-report-filter-multiselect.js";
 import "./lms-report-heatmap.js";
 import "./lms-report-stacked-bar.js";

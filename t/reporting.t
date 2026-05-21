@@ -315,12 +315,41 @@ subtest 'TimeSeries bucket_expression helper emits MariaDB syntax' => sub {
 subtest 'TopN primitive' => sub {
     my $metric   = TestTopN->new( dbh => $dbh, scope => $scope );
     my $envelope = $metric->compute;
-    is $envelope->{type}, 'top_n', 'envelope type';
+    is $envelope->{type},        'top_n',      'envelope type';
+    is $envelope->{display},     'bar',        'display defaults to bar';
+    is $envelope->{orientation}, 'horizontal', 'orientation defaults to horizontal';
     my $items = $envelope->{items};
     is scalar @{$items}, 3, 'three distinct purposes in scope';
     is_deeply $items->[0], { label => 'study',    value => 4 }, 'top row';
     is_deeply $items->[1], { label => 'meeting',  value => 3 }, 'second row';
     is_deeply $items->[2], { label => 'tutoring', value => 1 }, 'third row';
+};
+
+subtest 'TopN primitive carries display=donut through to the envelope' => sub {
+    {
+
+        package TestTopNDonut;
+        use Moose;
+        extends 'Koha::Plugin::Com::LMSCloud::Util::Reporting::Metric::TopN';
+        has '+id'      => ( default => 'top_purposes_donut' );
+        has '+label'   => ( default => 'Top purposes (donut)' );
+        has '+display' => ( default => 'donut' );
+
+        sub _query {
+            my ($self) = @_;
+            return (
+                'SELECT purpose AS label, COUNT(*) AS value FROM bookings
+                  WHERE start BETWEEN ? AND ?
+                  GROUP BY purpose ORDER BY value DESC, label LIMIT ?',
+                [ $self->scope->start, $self->scope->end, $self->limit_n ],
+            );
+        }
+        __PACKAGE__->meta->make_immutable;
+    }
+
+    my $metric   = TestTopNDonut->new( dbh => $dbh, scope => $scope );
+    my $envelope = $metric->compute;
+    is $envelope->{display}, 'donut', 'display echoed';
 };
 
 {

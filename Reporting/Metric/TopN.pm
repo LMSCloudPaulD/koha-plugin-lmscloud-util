@@ -22,11 +22,22 @@ has 'limit_n' => (
 # 'horizontal' renders the values on the x-axis (default; reads as a
 # ranked list); 'vertical' renders categories on the x-axis (reads as a
 # histogram, useful when the categories are temporal — hour-of-day,
-# weekday — and should flow left-to-right).
+# weekday — and should flow left-to-right). Only consulted by the
+# frontend when `display` is "bar".
 has 'orientation' => (
     is      => 'ro',
     isa     => enum( [qw( horizontal vertical )] ),
     default => 'horizontal',
+);
+
+# 'bar' renders the items as a Chart.js bar chart (default; ranked or
+# histogram per `orientation`). 'donut' renders them as a doughnut chart
+# — better for proportional "share of total" reads where exact ranking
+# matters less than relative slice size.
+has 'display' => (
+    is      => 'ro',
+    isa     => enum( [qw( bar donut )] ),
+    default => 'bar',
 );
 
 sub type { return $TOP_N }
@@ -46,7 +57,11 @@ sub _postprocess {
         if $sql !~ m{\bLIMIT\b}smxi;
 
     my $items = $self->_coerce_rows( $sth, [qw( label value )] );
-    return { items => $items, orientation => $self->orientation };
+    return {
+        items       => $items,
+        orientation => $self->orientation,
+        display     => $self->display,
+    };
 }
 ## use critic
 

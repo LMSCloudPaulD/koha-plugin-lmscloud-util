@@ -50,12 +50,17 @@ export interface TopNItem {
 }
 
 export type TopNOrientation = "horizontal" | "vertical";
+export type TopNDisplay = "bar" | "donut";
 
 export interface TopNMetric extends MetricBase {
   type: "top_n";
   items: TopNItem[];
-  /** Defaults to `"horizontal"` (bars run left→right, ranked-list style). */
+  /** Defaults to `"horizontal"` (bars run left→right, ranked-list style).
+   *  Only consulted when `display` is `"bar"`. */
   orientation?: TopNOrientation;
+  /** Defaults to `"bar"`. Use `"donut"` for share-of-total reads where
+   *  proportional area matters more than exact ranking. */
+  display?: TopNDisplay;
 }
 
 export interface StackedBarSeries {

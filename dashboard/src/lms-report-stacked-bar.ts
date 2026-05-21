@@ -8,7 +8,7 @@ import {
   LinearScale,
   Tooltip,
 } from "chart.js";
-import { LitElement, html, nothing } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { createRef, ref, type Ref } from "lit/directives/ref.js";
 import { when } from "lit/directives/when.js";
@@ -26,7 +26,15 @@ Chart.register(
 
 @customElement("lms-report-stacked-bar")
 export class LMSReportStackedBar extends LitElement {
-  static override styles = [tokens, cardSurface];
+  static override styles = [
+    tokens,
+    cardSurface,
+    css`
+      .chart-wrap {
+        height: var(--lms-report-chart-height-stacked);
+      }
+    `,
+  ];
 
   @property({ attribute: false })
   metric?: StackedBarMetric;

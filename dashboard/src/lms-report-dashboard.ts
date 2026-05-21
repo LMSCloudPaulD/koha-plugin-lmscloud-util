@@ -6,6 +6,7 @@ import { repeat } from "lit/directives/repeat.js";
 import { applyDocumentLocale } from "./locale-init.js";
 import "./lms-report-chip-picker.js";
 import "./lms-report-counter.js";
+import "./lms-report-donut.js";
 import "./lms-report-filter-multiselect.js";
 import "./lms-report-heatmap.js";
 import "./lms-report-stacked-bar.js";
@@ -432,6 +433,11 @@ export class LMSReportDashboard extends LitElement {
           ></lms-report-time-series>
         </div>`;
       case "top_n": {
+        if (metric.display === "donut") {
+          return html`<div class="medium">
+            <lms-report-donut .metric=${metric}></lms-report-donut>
+          </div>`;
+        }
         // Vertical histograms need the full width for their X-axis labels
         // to breathe; ranked horizontal lists pack two-up.
         const wide = metric.orientation === "vertical";
