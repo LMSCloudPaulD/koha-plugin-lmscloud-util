@@ -78,6 +78,30 @@
   <source>Hours</source>
   <target>Stunden</target>
 </trans-unit>
+<trans-unit id="seef0ce71f86fbe92">
+  <source>Choose…</source>
+  <target>Auswählen…</target>
+</trans-unit>
+<trans-unit id="s58bfb494feb8eb02">
+  <source><x id="0" equiv-text="${this.selected.length}"/> selected</source>
+  <target><x id="0" equiv-text="${this.selected.length}"/> ausgewählt</target>
+</trans-unit>
+<trans-unit id="s873da987b495ea5f">
+  <source>No options available.</source>
+  <target>Keine Auswahl verfügbar.</target>
+</trans-unit>
+<trans-unit id="s8f18916860db5d80">
+  <source>Clear selection</source>
+  <target>Auswahl löschen</target>
+</trans-unit>
+<trans-unit id="s2fa05f91c1baa29b">
+  <source>Remove <x id="0" equiv-text="${label}"/></source>
+  <target><x id="0" equiv-text="${label}"/> entfernen</target>
+</trans-unit>
+<trans-unit id="s255857544a9d5ec0">
+  <source>Reset</source>
+  <target>Zurücksetzen</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

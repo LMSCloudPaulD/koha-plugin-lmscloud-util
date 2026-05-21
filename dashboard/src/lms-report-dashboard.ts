@@ -4,6 +4,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { repeat } from "lit/directives/repeat.js";
 import { applyDocumentLocale } from "./locale-init.js";
+import "./lms-report-chip-picker.js";
 import "./lms-report-counter.js";
 import "./lms-report-filter-multiselect.js";
 import "./lms-report-time-series.js";
@@ -39,19 +40,25 @@ export class LMSReportDashboard extends LitElement {
     formField,
     css`
       .filters {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
         gap: 0.75rem 1rem;
-        align-items: flex-end;
+        align-items: start;
         margin-bottom: 1rem;
-        padding: 0.5rem 0.75rem;
+        padding: 0.6rem 0.75rem;
         background: var(--lms-report-filters-bg);
         border: 1px solid var(--lms-report-filters-border);
         border-radius: 5px;
       }
+      .filters .actions {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+      }
       .field input[type="number"] {
-        min-width: 5rem;
-        width: 5rem;
+        min-width: 4rem;
+        width: 4.5rem;
       }
       .field--row {
         flex-direction: row;
@@ -83,17 +90,19 @@ export class LMSReportDashboard extends LitElement {
         outline: 2px solid var(--lms-report-accent-soft);
         outline-offset: 1px;
       }
-      button.apply {
+      button.apply,
+      button.reset {
         font: inherit;
         line-height: 1.42857143;
         padding: 0.35rem 0.85rem;
-        background: var(--lms-report-button-bg);
-        color: var(--lms-report-button-fg);
-        border: 1px solid var(--lms-report-button-border);
         border-radius: var(--lms-report-button-radius);
         font-weight: normal;
         cursor: pointer;
-        margin-left: auto;
+      }
+      button.apply {
+        background: var(--lms-report-button-bg);
+        color: var(--lms-report-button-fg);
+        border: 1px solid var(--lms-report-button-border);
       }
       button.apply:hover {
         background: var(--lms-report-button-bg-hover);
@@ -103,9 +112,22 @@ export class LMSReportDashboard extends LitElement {
         box-shadow: inset 0 0 0 1px #edb423;
         outline: none;
       }
-      button.apply:disabled {
+      button.apply:disabled,
+      button.reset:disabled {
         cursor: not-allowed;
         opacity: 0.6;
+      }
+      button.reset {
+        background: transparent;
+        color: var(--lms-report-fg);
+        border: 1px solid var(--lms-report-input-border);
+      }
+      button.reset:hover {
+        background: var(--lms-report-input-bg);
+      }
+      button.reset:focus {
+        outline: 2px solid var(--lms-report-accent-soft);
+        outline-offset: 1px;
       }
       .grid {
         display: grid;
@@ -227,9 +249,14 @@ export class LMSReportDashboard extends LitElement {
         ${this._renderLibrariesField()} ${this._renderCategoriesField()}
         <slot name="filters"></slot>
         ${this._renderWeekdayField()} ${this._renderHourRangeField()}
-        <button class="apply" type="submit" ?disabled=${this._loading}>
-          ${this._loading ? msg("Loading…") : msg("Apply")}
-        </button>
+        <div class="actions">
+          <button class="reset" type="button" @click=${this._onReset}>
+            ${msg("Reset")}
+          </button>
+          <button class="apply" type="submit" ?disabled=${this._loading}>
+            ${this._loading ? msg("Loading…") : msg("Apply")}
+          </button>
+        </div>
       </form>
       ${this._renderBody()}
     `;
@@ -239,30 +266,18 @@ export class LMSReportDashboard extends LitElement {
     if (this._libraries.length === 0) return nothing;
     return html`
       <div class="field">
-        <label for="branchcode">${msg("Branches")}</label>
-        <select
-          id="branchcode"
-          multiple
-          @change=${(e: Event) => {
-            const sel = e.target as HTMLSelectElement;
-            this._pendingBranchcodes = Array.from(
-              sel.selectedOptions,
-              (o) => o.value,
-            );
+        <label>${msg("Branches")}</label>
+        <lms-report-chip-picker
+          .label=${msg("Branches")}
+          .options=${this._libraries.map((lib) => ({
+            value: lib.library_id,
+            label: lib.name,
+          }))}
+          .selected=${this._pendingBranchcodes}
+          @change=${(e: CustomEvent<{ selected: string[] }>) => {
+            this._pendingBranchcodes = e.detail.selected;
           }}
-        >
-          ${map(
-            this._libraries,
-            (lib) => html`
-              <option
-                value=${lib.library_id}
-                ?selected=${this._pendingBranchcodes.includes(lib.library_id)}
-              >
-                ${lib.name}
-              </option>
-            `,
-          )}
-        </select>
+        ></lms-report-chip-picker>
       </div>
     `;
   }
@@ -271,32 +286,18 @@ export class LMSReportDashboard extends LitElement {
     if (this._categories.length === 0) return nothing;
     return html`
       <div class="field">
-        <label for="categorycode">${msg("Patron categories")}</label>
-        <select
-          id="categorycode"
-          multiple
-          @change=${(e: Event) => {
-            const sel = e.target as HTMLSelectElement;
-            this._pendingCategorycodes = Array.from(
-              sel.selectedOptions,
-              (o) => o.value,
-            );
+        <label>${msg("Patron categories")}</label>
+        <lms-report-chip-picker
+          .label=${msg("Patron categories")}
+          .options=${this._categories.map((cat) => ({
+            value: cat.patron_category_id,
+            label: cat.name,
+          }))}
+          .selected=${this._pendingCategorycodes}
+          @change=${(e: CustomEvent<{ selected: string[] }>) => {
+            this._pendingCategorycodes = e.detail.selected;
           }}
-        >
-          ${map(
-            this._categories,
-            (cat) => html`
-              <option
-                value=${cat.patron_category_id}
-                ?selected=${this._pendingCategorycodes.includes(
-                  cat.patron_category_id,
-                )}
-              >
-                ${cat.name}
-              </option>
-            `,
-          )}
-        </select>
+        ></lms-report-chip-picker>
       </div>
     `;
   }
@@ -432,6 +433,18 @@ export class LMSReportDashboard extends LitElement {
     event.preventDefault();
     this.start = this._pendingStart;
     this.end = this._pendingEnd;
+    void this._fetchReport();
+  }
+
+  private _onReset() {
+    this._pendingBranchcodes = [];
+    this._pendingCategorycodes = [];
+    this._pendingWeekdays = new Set();
+    this._pendingHourStart = null;
+    this._pendingHourEnd = null;
+    for (const filter of this._slottedFilters()) {
+      filter.filterReset?.();
+    }
     void this._fetchReport();
   }
 

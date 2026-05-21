@@ -1,15 +1,16 @@
 import { msg, updateWhenLocaleChanges } from "@lit/localize";
-import { LitElement, css, html, nothing } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { map } from "lit/directives/map.js";
+import "./lms-report-chip-picker.js";
+import type { ChipPickerOption } from "./lms-report-chip-picker.js";
 import { formField, tokens } from "./styles/tokens.js";
 import type { LMSReportFilterElement } from "./types.js";
 
 /**
  * Generic endpoint-backed multi-select that plugs into <lms-report-dashboard>
  * via its `filters` slot. Fetches `[{ [valueKey]: ..., [labelKey]: ... }]`
- * from `endpoint` and renders a multi-select whose chosen values surface
- * under the URL param named `name`.
+ * from `endpoint` and renders an <lms-report-chip-picker> whose chosen
+ * values surface under the URL param named `name`.
  *
  * Plugins use this to expose domain entities (rooms, events, equipment, …)
  * as report filters without forking the dashboard.
@@ -47,15 +48,11 @@ export class LMSReportFilterMultiselect
   @property({ type: String, attribute: "label-key" })
   labelKey = "name";
 
-  /** Comma-separated initial selection. Optional. */
-  @property({ type: String })
-  selected = "";
+  @state()
+  private _options: ChipPickerOption[] = [];
 
   @state()
-  private _options: Array<{ value: string; label: string }> = [];
-
-  @state()
-  private _pending: string[] = [];
+  private _selected: string[] = [];
 
   constructor() {
     super();
@@ -64,9 +61,6 @@ export class LMSReportFilterMultiselect
 
   override connectedCallback() {
     super.connectedCallback();
-    this._pending = this.selected
-      ? this.selected.split(",").filter((s) => s.length > 0)
-      : [];
     if (this.endpoint) void this._fetchOptions();
   }
 
@@ -75,53 +69,30 @@ export class LMSReportFilterMultiselect
   }
 
   filterValues(): string[] {
-    return [...this._pending];
+    return [...this._selected];
   }
 
   filterReset(): void {
-    this._pending = [];
+    this._selected = [];
   }
 
   override render() {
-    if (!this.name) return nothing;
     return html`
       <div class="field" part="field">
-        <label for="select">${this.label || this.name}</label>
-        <select
-          id="select"
-          multiple
-          @change=${this._onChange}
-          ?disabled=${this._options.length === 0}
-        >
-          ${map(
-            this._options,
-            (opt) => html`
-              <option
-                value=${opt.value}
-                ?selected=${this._pending.includes(opt.value)}
-              >
-                ${opt.label}
-              </option>
-            `,
-          )}
-        </select>
-        ${this._options.length === 0 && this.endpoint
-          ? html`<small>${msg("Loading…")}</small>`
-          : nothing}
+        <label>${this.label || this.name}</label>
+        <lms-report-chip-picker
+          .label=${this.label || this.name}
+          .options=${this._options}
+          .selected=${this._selected}
+          .placeholder=${this._options.length === 0 && this.endpoint
+            ? msg("Loading…")
+            : msg("Choose…")}
+          @change=${(e: CustomEvent<{ selected: string[] }>) => {
+            this._selected = e.detail.selected;
+          }}
+        ></lms-report-chip-picker>
       </div>
     `;
-  }
-
-  private _onChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this._pending = Array.from(select.selectedOptions, (o) => o.value);
-    this.dispatchEvent(
-      new CustomEvent("lms-filter-change", {
-        detail: { name: this.name, values: this._pending },
-        bubbles: true,
-        composed: true,
-      }),
-    );
   }
 
   private async _fetchOptions() {
@@ -142,8 +113,9 @@ export class LMSReportFilterMultiselect
         .filter((opt) => opt.value !== "")
         .sort((a, b) => a.label.localeCompare(b.label));
     } catch {
-      // Endpoint unreachable — leave _options empty so the select stays
-      // disabled. The dashboard treats an empty filter as "no narrowing".
+      // Endpoint unreachable — leave _options empty so the picker shows
+      // its empty state. The dashboard treats an empty filter as "no
+      // narrowing".
     }
   }
 }
